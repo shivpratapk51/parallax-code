@@ -7,6 +7,46 @@ export const COMMANDS: Command[] = [
         value: "/new",
     },
     {
+        name:"agents",
+        description: "Switch Agents",
+        value:"/agents"
+    },
+    {
+        name:"models",
+        description: "Select AI model for generation",
+        value:"/models"
+    },
+    {
+        name:"sessions",
+        description: "Browse past sessions",
+        value:"/sessions"
+    },
+    {
+        name:"theme",
+        description: "Change the theme color",
+        value:"/theme"
+    },
+    {
+        name:"login",
+        description: "Sign in with browser",
+        value:"/login"
+    },
+    {
+        name:"logout",
+        description: "Sign out of your account",
+        value:"/logout"
+    },
+    {
+        name:"upgrade",
+        description: "Buy more credits",
+        value:"/upgrade"
+    },
+    {
+        name:"usage",
+        description: "Open billing portal in your browser",
+        value:"/usage"
+    },
+    {
         name: "exit",
         description: "Quit the application",
         value: "/exit",

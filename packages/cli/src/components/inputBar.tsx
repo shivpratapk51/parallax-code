@@ -2,6 +2,11 @@ import type { KeyBinding } from "@opentui/core";
 import { EmptyBorder } from "./boarder";
 import { StatusBar } from "./statusBar";
 import { CommandMenu } from "../command-menu";
+import { useRef, useCallback, useEffect } from "react";
+import type { TextareaRenderable } from "@opentui/core";
+import type { Command } from "../command-menu/types";
+import { useCommandMenu } from "../command-menu/use-command-menu";
+import { useRenderer } from "@opentui/react";
 
 type Props = {
   onSubmit: (text: string) => void;
@@ -16,12 +21,90 @@ export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
 ];
 
 export function InputBar({ onSubmit, disabled = false }: Props) {
+  const textareaRef = useRef<TextareaRenderable>(null);
+  const onSubmitRef = useRef<() => void>(() => {});
+  const renderer = useRenderer();
+
+  const {
+    commandQuery,
+    handleContentChange,
+    resolveCommand,
+    scrollRef,
+    selectedIndex,
+    setSelectedIndex,
+    showCommandMenu,
+  } = useCommandMenu();
+
+  const handleCommandExecute = useCallback((index: number) => {
+    const command = resolveCommand(index);
+    handleCommand(command!);
+  }, []);
+
+  const handleTextareaContentChange = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    handleContentChange(textarea.plainText);
+  }, []);
+
+  const handleSubmit = useCallback(() => {
+    if (disabled) return;
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const text = textarea.plainText.trim();
+    if (text.length === 0) return;
+
+    onSubmit(text);
+    textarea.setText("");
+  }, [disabled, onSubmit]);
+
+  const handleCommand = useCallback(
+    (command: Command | undefined) => {
+      const textarea = textareaRef.current;
+      if (!textarea || !command) {
+        return;
+      }
+
+      textarea.setText("");
+      if (command.action) {
+        command.action({
+          exit: () => renderer.destroy(),
+        });
+      } else {
+        textarea.insertText(command.value + " ");
+      }
+    },
+    [renderer],
+  );
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    textarea.onSubmit = () => {
+      onSubmitRef.current();
+    };
+  }, []);
+
+  onSubmitRef.current = () => {
+    if (disabled) return;
+    if (showCommandMenu) {
+      const command = resolveCommand(selectedIndex);
+      handleCommand(command!);
+      return;
+    }
+    handleSubmit();
+  };
+
   return (
     <box width={"100%"} alignItems="center">
       <box
         // TODO: Add left border
         border={["left"]}
         borderColor={"#4dff4d"}
+        width={"100%"}
         customBorderChars={{
           ...EmptyBorder,
           vertical: "┃",
@@ -34,10 +117,10 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
           paddingX={2}
           paddingY={1}
           backgroundColor={"#1A1A24"}
-          width={"100%"}
+          width="100%"
           gap={1}
         >
-          {true && (
+          {showCommandMenu && (
             <box
               position="absolute"
               bottom={"100%"}
@@ -45,14 +128,26 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
               width={"100%"}
               backgroundColor={"#1A1A24"}
               zIndex={10}
+              flexDirection="row" // ← add this
+              alignItems="flex-start"
             >
-              <CommandMenu query=""/>
+              <CommandMenu
+                query={commandQuery}
+                selectedIndex={selectedIndex}
+                scrollRef={scrollRef}
+                onSelect={setSelectedIndex}
+                onExecute={handleCommandExecute}
+              />
             </box>
           )}
           <textarea
+            ref={textareaRef}
             focused={!disabled}
-            placeholder={'Ask anything... "Fix a bug in database'}
+            placeholder={'Ask anything... "Fix a bug in database"'}
             keyBindings={TEXTAREA_KEY_BINDINGS}
+            onContentChange={handleTextareaContentChange}
+            width="100%" // ← add this
+            flexGrow={1}
           />
           <StatusBar />
         </box>
