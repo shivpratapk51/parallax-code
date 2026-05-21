@@ -79,7 +79,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
       handleCommand(command!);
     },
     [resolveCommand, handleCommand],
-  );
+  ); 
 
   useEffect(() => {
     const textarea = textareaRef.current;
